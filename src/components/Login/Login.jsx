@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import {auth} from '../Firebase/firebase';
-import firebase from 'firebase/app';
-import ReCAPTCHA from 'react-recaptcha-google';
+import { useRef } from 'react';
+import firebase from '../Firebase/firebase';
 const StyledLoginContainer = styled.div`
   padding-top:25vh;
   height: 100%;
@@ -12,7 +11,7 @@ const StyledLoginContainer = styled.div`
 
 `;
 
-const StyledLoginForm = styled.form`
+const StyledLoginForm = styled.div`
   background-color: white;
   height: 350px;
   width: 400px;
@@ -61,43 +60,72 @@ const StyledSubmitButton = styled.button`
   font-weight: 600;
   border-radius: 5px;
 `;
-const Login = ()=>{
+const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verifiedCode, setVerifiedCode] = useState('');
 
-  useEffect(()=>{
-   
-  },[])
-  const onChangeHandler = (e, setState)=>{
+  const recaptchaRef = useRef();
+  useEffect(() => {
+    firebase.auth().useDeviceLanguage()
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('sign-in-button', {
+      'size': 'invisible',
+      'callback': function (response) {
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+
+      }
+    });
+
+  }, [])
+  const onChangeHandler = (e, setState) => {
     setState(e.target.value);
   }
-  const onChagneCaptcha = (value)=>{
-    console.log(value);
-  }
 
-  const onSubmitHandler = (e)=>{
-    console.log('aaa');
-    e.preventDefault();
-    
+  const onSubmitHandler = async (e) => {
+    console.log('submit')
+
+    const appVerifier = window.recaptchaVerifier;
+    console.log(appVerifier)
+    firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+      .then(function (confirmationResult) {
+        // SMS sent. Prompt user to type the code from the message, then sign the
+        // user in with confirmationResult.confirm(code).
+        confirmationResult.confirm(verifiedCode).then(function (result) {
+          // User signed in successfully.
+          console.log(result)
+          // ...
+        }).catch(function (error) {
+          // User couldn't sign in (bad verification code?)
+          // ...
+        });
+
+      }).catch(function (error) {
+        // Error; SMS not sent
+        // ...
+        window.recaptchaVerifier.render().then(function (widgetId) {
+          console.log(widgetId)
+          window.grecaptcha.reset(widgetId);
+        })
+
+
+      });
   }
   const content = (
     <StyledLoginContainer>
-      <StyledLoginForm onSubmit={e=> onSubmitHandler(e)}>
+      <label></label>
+      <StyledLoginForm >
         <StyledLoginHeader>LOGIN</StyledLoginHeader>
         <StyledInputLoginFiled>
           <span>Phone number:</span>
-          <input onChange={(e)=>onChangeHandler(e, setPhoneNumber)} value={phoneNumber} type="tel"/>
+          <input onChange={ (e) => onChangeHandler(e, setPhoneNumber) } value={ phoneNumber } type="tel" />
         </StyledInputLoginFiled>
         <StyledInputLoginFiled>
           <span>Verified code:</span>
-          <input onChange={(e)=>onChangeHandler(e, setVerifiedCode)} value={verifiedCode} type="number"/>
+          <input onChange={ (e) => onChangeHandler(e, setVerifiedCode) } value={ verifiedCode } type="number" />
         </StyledInputLoginFiled>
-        <StyledSubmitButton id='sign-in-button'>Submit</StyledSubmitButton>
+        <StyledSubmitButton id='sign-in-button' onClick={ e => onSubmitHandler(e) }>Submit</StyledSubmitButton>
+        <div id='captcha'></div>
       </StyledLoginForm>
-      <ReCAPTCHA
-        siteKey="site key"
-        onChange={onChagneCaptcha}
-      />
+
     </StyledLoginContainer>
   );
   return content;
