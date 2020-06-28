@@ -1,5 +1,7 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-
+## Prerequisites
+ `nodejs`
+ `npm`
 ## Available Scripts
 First you must install all necessary dependencies: 
 
