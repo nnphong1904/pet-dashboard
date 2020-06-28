@@ -1,0 +1,1 @@
+export const getCurrentAdmin = (state)=> state.admin

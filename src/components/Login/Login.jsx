@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useRef } from 'react';
 import firebase from '../Firebase/firebase';
+import { useHistory } from "react-router-dom"
+import { useDispatch } from 'react-redux'
+import { updateCurrentAdmin } from '../Redux/action'
 const StyledLoginContainer = styled.div`
   padding-top:25vh;
   height: 100%;
@@ -63,8 +66,8 @@ const StyledSubmitButton = styled.button`
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verifiedCode, setVerifiedCode] = useState('');
-
-  const recaptchaRef = useRef();
+  const history = useHistory()
+  const dispatch = useDispatch()
   useEffect(() => {
     firebase.auth().useDeviceLanguage()
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('sign-in-button', {
@@ -74,6 +77,7 @@ const Login = () => {
 
       }
     });
+
 
   }, [])
   const onChangeHandler = (e, setState) => {
@@ -89,13 +93,19 @@ const Login = () => {
       .then(function (confirmationResult) {
         // SMS sent. Prompt user to type the code from the message, then sign the
         // user in with confirmationResult.confirm(code).
+        console.log(verifiedCode)
         confirmationResult.confirm(verifiedCode).then(function (result) {
           // User signed in successfully.
-          console.log(result)
+          if (result.user) {
+            dispatch(updateCurrentAdmin(result.user))
+            history.replace('/')
+
+          }
           // ...
         }).catch(function (error) {
           // User couldn't sign in (bad verification code?)
           // ...
+          console.log('err 1')
         });
 
       }).catch(function (error) {
@@ -105,7 +115,7 @@ const Login = () => {
           console.log(widgetId)
           window.grecaptcha.reset(widgetId);
         })
-
+        console.log('err 2')
 
       });
   }
